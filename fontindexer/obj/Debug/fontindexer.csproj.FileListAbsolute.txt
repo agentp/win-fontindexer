@@ -1,0 +1,12 @@
+F:\fontindexer\fontindexer\bin\Debug\fontindexer.exe
+F:\fontindexer\fontindexer\bin\Debug\fontindexer.pdb
+F:\fontindexer\fontindexer\obj\Debug\ResolveAssemblyReference.cache
+F:\fontindexer\fontindexer\obj\Debug\Window1.baml
+F:\fontindexer\fontindexer\obj\Debug\Window1.g.cs
+F:\fontindexer\fontindexer\obj\Debug\App.g.cs
+F:\fontindexer\fontindexer\obj\Debug\fontindexer_MarkupCompile.cache
+F:\fontindexer\fontindexer\obj\Debug\fontindexer.g.resources
+F:\fontindexer\fontindexer\obj\Debug\fontindexer.Properties.Resources.resources
+F:\fontindexer\fontindexer\obj\Debug\fontindexer.csproj.GenerateResource.Cache
+F:\fontindexer\fontindexer\obj\Debug\fontindexer.exe
+F:\fontindexer\fontindexer\obj\Debug\fontindexer.pdb
