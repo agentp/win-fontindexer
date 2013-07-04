@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +15,7 @@ using System.IO;
 using System.ComponentModel;
 using System.Data;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace fontindexer
 {
@@ -57,6 +58,13 @@ namespace fontindexer
         {
             set { this._protext = value; this.OnPropertyChanged("ProText"); }
             get { return this._protext; }
+        }
+
+        private bool _includeunknown;
+        public bool IncludeUnknown
+        {
+            set { this._includeunknown = value; this.OnPropertyChanged("IncludeUnknown"); }
+            get { return this._includeunknown; }
         }
 
         BackgroundWorker bgw;
@@ -130,6 +138,8 @@ namespace fontindexer
         private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             this.IsEnabled = true;
+            this.ProText += " Done!";
+            this.ProVal = 0;
         }
 
         private void bw_DoWork(object sender, DoWorkEventArgs e)
@@ -138,25 +148,31 @@ namespace fontindexer
             {
                 // Create table
                 DataTable tbl = new DataTable();
-                tbl.Columns.Add(new DataColumn() { ColumnName = "Font Name" });
-                tbl.Columns.Add(new DataColumn() { ColumnName = "Font Path" });
-                tbl.Columns.Add(new DataColumn() { ColumnName = "Font Filename" });
+                tbl.Columns.Add(new DataColumn() { ColumnName = "Name" });
+                tbl.Columns.Add(new DataColumn() { ColumnName = "Type" });
+                tbl.Columns.Add(new DataColumn() { ColumnName = "Path" });
+                tbl.Columns.Add(new DataColumn() { ColumnName = "Filename" });
                 tbl.Columns.Add(new DataColumn() { ColumnName = "Filesize" });
-                tbl.Columns.Add(new DataColumn() { ColumnName = "Create Date" });
-                tbl.Columns.Add(new DataColumn() { ColumnName = "Modification Date" });
+                tbl.Columns.Add(new DataColumn() { ColumnName = "Create" });
+                tbl.Columns.Add(new DataColumn() { ColumnName = "Modification" });
 
                 DataRow headline = tbl.NewRow();
-                headline["Font Name"] = "Font Name";
-                headline["Font Path"] = "Font Path";
-                headline["Font Filename"] = "Font Filename";
+                headline["Name"] = "Font Name";
+                headline["Type"] = "Font Type";
+                headline["Path"] = "Font Path";
+                headline["Filename"] = "Font Filename";
                 headline["Filesize"] = "Filesize";
-                headline["Create Date"] = "Create Date";
-                headline["Modification Date"] = "Modification Date";
+                headline["Create"] = "Create Date";
+                headline["Modification"] = "Modification Date";
                 tbl.Rows.Add(headline);
 
                 // Scan folder
                 String fontfolder = "";
-                this.Dispatcher.Invoke(new Action(() => { fontfolder = this.FontFolder; }));
+                bool includeunknown = false;
+                this.Dispatcher.Invoke(new Action(() => { 
+                    fontfolder = this.FontFolder; 
+                    includeunknown = this.IncludeUnknown;
+                }));
                 string[] files = Directory.GetFiles(fontfolder);
                 this.Dispatcher.Invoke(new Action(() =>
                 {
@@ -166,38 +182,99 @@ namespace fontindexer
 
                 foreach (String file in files)
                 {
+                    FileInfo fontfile = new FileInfo(file);
+                    String extension = fontfile.Extension.ToLower();
+                    DataRow newrow = tbl.NewRow();
+
+                    if ((extension.Equals(".pfa") || extension.Equals(".pfb") ||
+                        extension.Equals(".afm") || extension.Equals(".ttf")) == false && 
+                        includeunknown == false)
+                    {
+                        this.ProVal++;
+                        continue;
+                    }
+                    
+
+                    // Default values
+                    newrow["Name"] = "ERR: File extension not supported";
+                    newrow["Type"] = extension.Trim(new char[] { '.' }).ToUpper();
+                    newrow["Path"] = fontfile.Directory.FullName;
+                    newrow["Filename"] = fontfile.Name;
+                    newrow["Filesize"] = "ERR";
+                    newrow["Create"] = "ERR";
+                    newrow["Modification"] = "ERR";
+
+                    // Get real values
                     try
                     {
-                        FileInfo fontfile = new FileInfo(file);
-                        DataRow newrow = tbl.NewRow();
-
-                        // Font Name
-                        System.Drawing.Text.PrivateFontCollection fontCol = new System.Drawing.Text.PrivateFontCollection();
-                        fontCol.AddFontFile(file);
-                        newrow["Font Name"] = fontCol.Families[0].Name;
-
-                        // Font path
-                        newrow["Font Path"] = fontfile.Directory.FullName;
-
-                        // Filename
-                        newrow["Font Filename"] = fontfile.Name;
-
                         // Size
                         newrow["Filesize"] = Convert.ToInt32((fontfile.Length / 1024)) + "KB";
 
                         // Create Date
-                        newrow["Create Date"] = fontfile.CreationTime.ToString("yyyy-MM-dd H:mm:ss");
+                        newrow["Create"] = fontfile.CreationTime.ToString("yyyy-MM-dd H:mm:ss");
 
                         // Mod Date
-                        newrow["Modification Date"] = fontfile.LastWriteTime.ToString("yyyy-MM-dd H:mm:ss");
+                        newrow["Modification"] = fontfile.LastWriteTime.ToString("yyyy-MM-dd H:mm:ss");
 
-                        tbl.Rows.Add(newrow);
+                        // Font Name
+                        if (extension.Equals(".ttf"))
+                        {
+                            System.Drawing.Text.PrivateFontCollection fontCol = new System.Drawing.Text.PrivateFontCollection();
+                            try
+                            {
+                                fontCol.AddFontFile(file);
+                                newrow["Name"] = fontCol.Families[0].Name;
+                            }
+                            catch (Exception)
+                            {
+                                newrow["Name"] = "ERR: No valid font file";
+                            }
+                        }
+                        else
+                        {
+                            Regex rgx = null;
+                            if (extension.Equals(".pfa"))
+                            {
+                                rgx = new Regex(@"%%FontName: ([^\s]*)", RegexOptions.Multiline);
+                            }
+                            else if(extension.Equals(".pfb"))
+                            {
+                                rgx = new Regex(@"/FontName /([^\s]*)", RegexOptions.Multiline);
+                            }
+                            else if (extension.Equals(".afm"))
+                            {
+                                rgx = new Regex(@"FullName ([^\s]*)", RegexOptions.Multiline);
+                            }
+
+                            if (rgx != null)
+                            {
+                                String content = File.ReadAllText(fontfile.FullName);
+                                if (rgx.IsMatch(content))
+                                {
+                                    Match match = rgx.Match(content);
+                                    newrow["Name"] = match.Groups[1].Value.ToString();
+                                }
+                                else
+                                {
+                                    newrow["Name"] = "ERR: Name not found";
+                                }
+                            }
+                            else
+                            {
+                                newrow["Name"] = "ERR: Unexpected file extension";
+                            }
+                        }
+                        
+
+                        
                     }
-                    catch (Exception)
+                    catch (Exception exx)
                     {
+                        newrow["Name"] = "Exception: "+exx.Message.Replace("\"", "'");
                     }
                     finally
                     {
+                        tbl.Rows.Add(newrow);
                         this.Dispatcher.Invoke(new Action(() =>
                         {
                             this.ProVal++;
