@@ -1,8 +1,8 @@
-﻿<Window x:Class="fontindexer.Window1"
+<Window x:Class="fontindexer.Window1"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Font Indexer" 
-    ResizeMode="NoResize"
+    ResizeMode="CanMinimize"
     Height="250" 
     Width="600">
 
@@ -32,6 +32,7 @@
                 <ColumnDefinition Width="120" />
             </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="30" />
             <RowDefinition Height="30" />
             <RowDefinition Height="30" />
             <RowDefinition Height="60" />
@@ -81,9 +82,26 @@
             Style="{StaticResource button}"
             Click="OnSelectCsvFile"
             Content="Select"/>
+
+        <Label 
+            Grid.Column="0" 
+            Style="{StaticResource cell}"
+            Grid.Row="2" 
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            Content="Settings:" />
+
+        <CheckBox
+            Grid.Row="2"
+            Grid.Column="1"
+            Grid.ColumnSpan="2"
+            VerticalAlignment="Center"
+            IsChecked="{Binding Path=IncludeUnknown, UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+            Content="Include unknown file extensions" />
+            
         
         <ProgressBar
-            Grid.Row="2"
+            Grid.Row="3"
             Grid.Column="0"
             Grid.ColumnSpan="2"
             Height="20"
@@ -93,24 +111,44 @@
             Margin="0 10 0 10"/>
         
         <Label
-            Grid.Row="2"
+            Grid.Row="3"
             Grid.Column="3"
             VerticalAlignment="Center"
             Width="100"
             HorizontalAlignment="Right"
             Content="{Binding Path=ProText, UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"/>
 
-        <Label 
-            Grid.Row="3"
+        <StackPanel
+            Grid.Row="4"
             Grid.Column="0"
             Grid.ColumnSpan="2"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Bottom"
-            Content="2013-07-03 by Christian Blechert (http://fiae.ws)" />
-        
+            VerticalAlignment="Bottom">
+            
+            <Label 
+                Grid.Row="4"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Padding="0"
+                Margin="0"
+                Content="Supported font extensions: pfa, pfb, afm, ttf" />
+
+            <Label 
+                Grid.Row="4"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Padding="0"
+                Margin="0"
+                Content="2013-07-03 by Christian Blechert (http://fiae.ws)" />
+
+        </StackPanel>
+
         <Button 
             Grid.Column="3"
-            Grid.Row="3"
+            Grid.Row="4"
             Height="30" 
             Content="Do it!" 
             Width="100" 
